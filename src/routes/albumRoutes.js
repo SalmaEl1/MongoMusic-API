@@ -19,6 +19,41 @@ const router = express.Router();
  *   get:
  *     summary: Get all albums
  *     tags: [Albums]
+ *     parameters:
+ *       - in: query
+ *         name: title
+ *         schema:
+ *           type: string
+ *         description: Filter by title (contains, case-insensitive).
+ *       - in: query
+ *         name: artist
+ *         schema:
+ *           type: string
+ *         description: Filter by artist ObjectId (exact match).
+ *       - in: query
+ *         name: releaseDateFrom
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter albums released on or after this date (YYYY-MM-DD).
+ *       - in: query
+ *         name: releaseDateTo
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter albums released on or before this date (YYYY-MM-DD).
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number.
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of results per page.
  *     responses:
  *       200:
  *         description: Albums retrieved successfully.
@@ -30,12 +65,18 @@ const router = express.Router();
  *                 error:
  *                   type: boolean
  *                   example: false
- *                 count:
- *                   type: integer
  *                 data:
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Album'
+ *                 pagination:
+ *                   $ref: '#/components/schemas/Pagination'
+ *       400:
+ *         description: Invalid query parameters.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Server error.
  *         content:

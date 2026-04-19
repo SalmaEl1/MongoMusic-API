@@ -71,21 +71,6 @@ const validatePositiveNumber = (value, label, errors, { required = false, allowZ
   }
 };
 
-const validateOptionalStringArray = (value, label, errors) => {
-  if (value === undefined || value === null) {
-    return;
-  }
-
-  if (!Array.isArray(value)) {
-    errors.push(`${label} must be an array of non-empty strings.`);
-    return;
-  }
-
-  if (value.some((item) => isBlankString(item))) {
-    errors.push(`${label} must contain non-empty strings.`);
-  }
-};
-
 const createArtistValidator = (req) => {
   const errors = [];
   const { body } = req;
@@ -97,7 +82,6 @@ const createArtistValidator = (req) => {
   validateRequiredString(body.name, 'Name', errors);
   validateOptionalString(body.country, 'Country', errors);
   validatePositiveNumber(body.followers, 'Followers', errors, { allowZero: true, integer: true });
-  validateOptionalStringArray(body.genres, 'Genres', errors);
   validateOptionalDate(body.birthDate, 'Birth date', errors);
 
   return errors;
@@ -116,7 +100,6 @@ const createAlbumValidator = (req) => {
   validateRequiredString(body.title, 'Title', errors);
   validateRequiredObjectId(body.artist, 'Artist', errors);
   validateOptionalDate(body.releaseDate, 'Release date', errors);
-  validateOptionalString(body.genre, 'Genre', errors);
 
   return errors;
 };

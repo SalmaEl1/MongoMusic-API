@@ -36,13 +36,6 @@ const options = {
               minimum: 0,
               example: 12500000
             },
-            genres: {
-              type: 'array',
-              items: {
-                type: 'string'
-              },
-              example: ['alternative rock', 'art rock']
-            },
             birthDate: {
               type: 'string',
               format: 'date',
@@ -87,10 +80,6 @@ const options = {
               type: 'string',
               example: '67f2cb0cd6371983ba12a111'
             },
-            genre: {
-              type: 'string',
-              example: 'Alternative Rock'
-            }
           }
         },
         Album: {
@@ -271,17 +260,6 @@ const options = {
             }
           }
         },
-        SongsByGenreStat: {
-          type: 'object',
-          properties: {
-            genre: {
-              type: 'string'
-            },
-            songCount: {
-              type: 'number'
-            }
-          }
-        }
       }
     }
   },

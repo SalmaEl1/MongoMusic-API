@@ -43,8 +43,23 @@ const errorHandler = (error, req, res, next) => {
   });
 };
 
+const parsePositiveInteger = (value, fieldName, defaultValue) => {
+  if (value === undefined) {
+    return defaultValue;
+  }
+
+  const parsedValue = Number(value);
+
+  if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
+    throw new AppError(`${fieldName} must be a positive integer.`, 400);
+  }
+
+  return parsedValue;
+};
+
 module.exports = {
   AppError,
   notFoundHandler,
-  errorHandler
+  errorHandler,
+  parsePositiveInteger
 };

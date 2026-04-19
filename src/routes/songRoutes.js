@@ -23,12 +23,42 @@ const router = express.Router();
  *         name: search
  *         schema:
  *           type: string
- *         description: Search in song title.
+ *         description: Filter by title (contains, case-insensitive).
+ *       - in: query
+ *         name: artist
+ *         schema:
+ *           type: string
+ *         description: Filter by artist ObjectId (exact match).
+ *       - in: query
+ *         name: album
+ *         schema:
+ *           type: string
+ *         description: Filter by album ObjectId (exact match).
  *       - in: query
  *         name: releaseYear
  *         schema:
  *           type: integer
- *         description: Filter songs by release year.
+ *         description: Filter by exact release year (cannot be combined with minReleaseYear/maxReleaseYear).
+ *       - in: query
+ *         name: minReleaseYear
+ *         schema:
+ *           type: integer
+ *         description: Filter songs released on or after this year.
+ *       - in: query
+ *         name: maxReleaseYear
+ *         schema:
+ *           type: integer
+ *         description: Filter songs released on or before this year.
+ *       - in: query
+ *         name: minDuration
+ *         schema:
+ *           type: number
+ *         description: Filter songs with duration >= this value (seconds).
+ *       - in: query
+ *         name: maxDuration
+ *         schema:
+ *           type: number
+ *         description: Filter songs with duration <= this value (seconds).
  *       - in: query
  *         name: sort
  *         schema:

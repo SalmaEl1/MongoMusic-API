@@ -11,48 +11,41 @@ const artistsData = [
     name: 'Aitana',
     country: 'Spain',
     followers: 0,
-    genres: ['pop', 'spanish pop'],
     birthDate: new Date('1999-06-27')
   },
   {
     name: 'Melendi',
     country: 'Spain',
     followers: 0,
-    genres: ['pop rock', 'rumba'],
     birthDate: new Date('1979-01-21')
   },
   {
     name: 'Tawsen',
     country: 'Morocco',
-    followers: 0,
-    genres: ['moroccan pop', 'urban pop']
+    followers: 0
   },
   {
     name: 'Burna Boy',
     country: 'Nigeria',
     followers: 0,
-    genres: ['afrofusion', 'afrobeats'],
     birthDate: new Date('1991-07-02')
   },
   {
     name: 'Dua Lipa',
     country: 'United Kingdom',
     followers: 0,
-    genres: ['pop', 'dance pop'],
     birthDate: new Date('1995-08-22')
   },
   {
     name: 'Stromae',
     country: 'Belgium',
     followers: 0,
-    genres: ['electropop', 'chanson'],
     birthDate: new Date('1985-03-12')
   },
   {
     name: 'Bad Bunny',
     country: 'Puerto Rico',
     followers: 0,
-    genres: ['reggaeton', 'latin trap'],
     birthDate: new Date('1994-03-10')
   }
 ];
@@ -62,50 +55,43 @@ const albumsData = [
     key: 'alpha',
     title: 'alpha',
     releaseDate: new Date('2023-09-22'),
-    artistName: 'Aitana',
-    genre: 'Pop'
+    artistName: 'Aitana'
   },
   {
     key: 'sin-noticias',
     title: 'Sin noticias de Holanda',
     releaseDate: new Date('2003-02-11'),
-    artistName: 'Melendi',
-    genre: 'Pop Rock'
+    artistName: 'Melendi'
   },
   {
     key: 'al-mawja',
     title: 'Al Mawja',
     releaseDate: new Date('2020-11-06'),
-    artistName: 'Tawsen',
-    genre: 'Moroccan Pop'
+    artistName: 'Tawsen'
   },
   {
     key: 'african-giant',
     title: 'African Giant',
     releaseDate: new Date('2019-07-26'),
-    artistName: 'Burna Boy',
-    genre: 'Afrofusion'
+    artistName: 'Burna Boy'
   },
   {
     key: 'future-nostalgia',
     title: 'Future Nostalgia',
     releaseDate: new Date('2020-03-27'),
-    artistName: 'Dua Lipa',
-    genre: 'Pop'
+    artistName: 'Dua Lipa'
   },
   {
     key: 'multitude',
     title: 'Multitude',
     releaseDate: new Date('2022-03-04'),
-    artistName: 'Stromae',
-    genre: 'Pop'
+    artistName: 'Stromae'
   },
   {
     key: 'yhlqmdlg',
     title: 'YHLQMDLG',
     releaseDate: new Date('2020-02-29'),
-    artistName: 'Bad Bunny',
-    genre: 'Reggaeton'
+    artistName: 'Bad Bunny'
   }
 ];
 
@@ -275,8 +261,7 @@ const seedDatabase = async () => {
       albumsData.map((album) => ({
         title: album.title,
         releaseDate: album.releaseDate,
-        artist: artistsByName.get(album.artistName)._id,
-        genre: album.genre
+        artist: artistsByName.get(album.artistName)._id
       }))
     );
 

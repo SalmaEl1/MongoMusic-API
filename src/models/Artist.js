@@ -16,21 +16,13 @@ const artistSchema = new mongoose.Schema(
       type: Number,
       min: [0, 'Followers cannot be negative.']
     },
-    genres: {
-      type: [
-        {
-          type: String,
-          trim: true
-        }
-      ],
-      default: undefined
-    },
     birthDate: {
       type: Date
     }
   },
   {
     timestamps: { createdAt: true, updatedAt: false },
+    versionKey: false
   }
 );
 

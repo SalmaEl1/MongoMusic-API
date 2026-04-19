@@ -2,20 +2,66 @@ const Album = require('../models/Album');
 const Artist = require('../models/Artist');
 const Song = require('../models/Song');
 const asyncHandler = require('../middlewares/asyncHandler');
-const { AppError } = require('../middlewares/errorHandler');
+const { AppError, parsePositiveInteger } = require('../middlewares/errorHandler');
 
-const normalizeGenres = (genres) =>
-  Array.isArray(genres)
-    ? [...new Set(genres.map((genre) => String(genre).trim()).filter(Boolean))]
-    : undefined;
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const getArtists = asyncHandler(async (req, res) => {
-  const artists = await Artist.find().sort({ name: 1 }).lean();
+  const page = parsePositiveInteger(req.query.page, 'Page', 1);
+  const limit = parsePositiveInteger(req.query.limit, 'Limit', 10);
+  const skip = (page - 1) * limit;
+  const query = {};
+
+  if (req.query.name) {
+    query.name = { $regex: escapeRegex(String(req.query.name).trim()), $options: 'i' };
+  }
+
+  if (req.query.country) {
+    query.country = { $regex: escapeRegex(String(req.query.country).trim()), $options: 'i' };
+  }
+
+  if (req.query.minFollowers !== undefined || req.query.maxFollowers !== undefined) {
+    query.followers = {};
+    if (req.query.minFollowers !== undefined) {
+      const min = Number(req.query.minFollowers);
+      if (!Number.isFinite(min) || min < 0) throw new AppError('minFollowers must be a non-negative number.', 400);
+      query.followers.$gte = min;
+    }
+    if (req.query.maxFollowers !== undefined) {
+      const max = Number(req.query.maxFollowers);
+      if (!Number.isFinite(max) || max < 0) throw new AppError('maxFollowers must be a non-negative number.', 400);
+      query.followers.$lte = max;
+    }
+  }
+
+  if (req.query.birthDateFrom || req.query.birthDateTo) {
+    query.birthDate = {};
+    if (req.query.birthDateFrom) {
+      const date = new Date(req.query.birthDateFrom);
+      if (isNaN(date)) throw new AppError('birthDateFrom must be a valid date.', 400);
+      query.birthDate.$gte = date;
+    }
+    if (req.query.birthDateTo) {
+      const date = new Date(req.query.birthDateTo);
+      if (isNaN(date)) throw new AppError('birthDateTo must be a valid date.', 400);
+      query.birthDate.$lte = date;
+    }
+  }
+
+  const [artists, total] = await Promise.all([
+    Artist.find(query).sort({ name: 1 }).skip(skip).limit(limit).lean(),
+    Artist.countDocuments(query)
+  ]);
 
   res.status(200).json({
     error: false,
-    count: artists.length,
-    data: artists
+    data: artists,
+    pagination: {
+      total,
+      page,
+      limit,
+      pages: total === 0 ? 0 : Math.ceil(total / limit)
+    }
   });
 });
 
@@ -37,7 +83,6 @@ const createArtist = asyncHandler(async (req, res) => {
     name: req.body.name.trim(),
     country: req.body.country?.trim(),
     followers: req.body.followers,
-    genres: normalizeGenres(req.body.genres),
     birthDate: req.body.birthDate
   });
 
@@ -55,7 +100,6 @@ const updateArtist = asyncHandler(async (req, res) => {
       name: req.body.name.trim(),
       country: req.body.country?.trim(),
       followers: req.body.followers,
-      genres: normalizeGenres(req.body.genres),
       birthDate: req.body.birthDate
     },
     {

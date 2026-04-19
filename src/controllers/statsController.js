@@ -83,38 +83,7 @@ const getAverageDurationPerAlbum = asyncHandler(async (req, res) => {
   });
 });
 
-const getSongsByGenre = asyncHandler(async (req, res) => {
-  const stats = await Song.aggregate([
-    {
-      $group: {
-        _id: '$genre',
-        songCount: { $sum: 1 }
-      }
-    },
-    {
-      $project: {
-        _id: 0,
-        genre: '$_id',
-        songCount: 1
-      }
-    },
-    {
-      $sort: {
-        songCount: -1,
-        genre: 1
-      }
-    }
-  ]);
-
-  res.status(200).json({
-    error: false,
-    count: stats.length,
-    data: stats
-  });
-});
-
 module.exports = {
   getSongsPerArtist,
-  getAverageDurationPerAlbum,
-  getSongsByGenre
+  getAverageDurationPerAlbum
 };

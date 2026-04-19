@@ -1,41 +1,28 @@
+const mongoose = require('mongoose');
 const Album = require('../models/Album');
 const Artist = require('../models/Artist');
 const Song = require('../models/Song');
 const asyncHandler = require('../middlewares/asyncHandler');
-const { AppError } = require('../middlewares/errorHandler');
+const { AppError, parsePositiveInteger } = require('../middlewares/errorHandler');
 
 const allowedSortFields = new Set(['title', 'duration', 'releaseYear', 'createdAt']);
 
 const songPopulate = [
   {
     path: 'artist',
-    select: 'name country followers genres birthDate createdAt'
+    select: 'name country followers birthDate createdAt'
   },
   {
     path: 'album',
-    select: 'title releaseDate genre artist createdAt',
+    select: 'title releaseDate artist createdAt',
     populate: {
       path: 'artist',
-      select: 'name country createdAt'
+      select: 'name country followers birthDate createdAt'
     }
   }
 ];
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-const parsePositiveInteger = (value, fieldName, defaultValue) => {
-  if (value === undefined) {
-    return defaultValue;
-  }
-
-  const parsedValue = Number(value);
-
-  if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
-    throw new AppError(`${fieldName} must be a positive integer.`, 400);
-  }
-
-  return parsedValue;
-};
 
 const buildSort = (sortValue) => {
   if (!sortValue) {
@@ -71,7 +58,7 @@ const normalizeSongPayload = (body) => ({
   title: body.title.trim(),
   duration: body.duration,
   releaseYear: body.releaseYear,
-  artist: String(body.artist),
+  artist: body.artist,
   album: body.album
 });
 
@@ -101,18 +88,49 @@ const getSongs = asyncHandler(async (req, res) => {
   const query = {};
 
   if (req.query.search) {
-    const safeSearch = escapeRegex(String(req.query.search).trim());
-    query.$or = [{ title: { $regex: safeSearch, $options: 'i' } }];
+    query.title = { $regex: escapeRegex(String(req.query.search).trim()), $options: 'i' };
   }
 
   if (req.query.releaseYear !== undefined) {
     const releaseYear = Number(req.query.releaseYear);
-
-    if (!Number.isInteger(releaseYear)) {
-      throw new AppError('releaseYear must be an integer.', 400);
-    }
-
+    if (!Number.isInteger(releaseYear)) throw new AppError('releaseYear must be an integer.', 400);
     query.releaseYear = releaseYear;
+  } else if (req.query.minReleaseYear !== undefined || req.query.maxReleaseYear !== undefined) {
+    query.releaseYear = {};
+    if (req.query.minReleaseYear !== undefined) {
+      const min = Number(req.query.minReleaseYear);
+      if (!Number.isInteger(min)) throw new AppError('minReleaseYear must be an integer.', 400);
+      query.releaseYear.$gte = min;
+    }
+    if (req.query.maxReleaseYear !== undefined) {
+      const max = Number(req.query.maxReleaseYear);
+      if (!Number.isInteger(max)) throw new AppError('maxReleaseYear must be an integer.', 400);
+      query.releaseYear.$lte = max;
+    }
+  }
+
+  if (req.query.minDuration !== undefined || req.query.maxDuration !== undefined) {
+    query.duration = {};
+    if (req.query.minDuration !== undefined) {
+      const min = Number(req.query.minDuration);
+      if (!Number.isFinite(min) || min <= 0) throw new AppError('minDuration must be a positive number.', 400);
+      query.duration.$gte = min;
+    }
+    if (req.query.maxDuration !== undefined) {
+      const max = Number(req.query.maxDuration);
+      if (!Number.isFinite(max) || max <= 0) throw new AppError('maxDuration must be a positive number.', 400);
+      query.duration.$lte = max;
+    }
+  }
+
+  if (req.query.artist) {
+    if (!mongoose.isValidObjectId(req.query.artist)) throw new AppError('artist must be a valid ObjectId.', 400);
+    query.artist = req.query.artist;
+  }
+
+  if (req.query.album) {
+    if (!mongoose.isValidObjectId(req.query.album)) throw new AppError('album must be a valid ObjectId.', 400);
+    query.album = req.query.album;
   }
 
   const skip = (page - 1) * limit;

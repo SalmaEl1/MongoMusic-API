@@ -19,6 +19,53 @@ const router = express.Router();
  *   get:
  *     summary: Get all artists
  *     tags: [Artists]
+ *     parameters:
+ *       - in: query
+ *         name: name
+ *         schema:
+ *           type: string
+ *         description: Filter by name (contains, case-insensitive).
+ *       - in: query
+ *         name: country
+ *         schema:
+ *           type: string
+ *         description: Filter by country (contains, case-insensitive).
+ *       - in: query
+ *         name: minFollowers
+ *         schema:
+ *           type: number
+ *           minimum: 0
+ *         description: Filter artists with followers >= this value.
+ *       - in: query
+ *         name: maxFollowers
+ *         schema:
+ *           type: number
+ *           minimum: 0
+ *         description: Filter artists with followers <= this value.
+ *       - in: query
+ *         name: birthDateFrom
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter artists born on or after this date (YYYY-MM-DD).
+ *       - in: query
+ *         name: birthDateTo
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter artists born on or before this date (YYYY-MM-DD).
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number.
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of results per page.
  *     responses:
  *       200:
  *         description: Artists retrieved successfully.
@@ -30,12 +77,18 @@ const router = express.Router();
  *                 error:
  *                   type: boolean
  *                   example: false
- *                 count:
- *                   type: integer
  *                 data:
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Artist'
+ *                 pagination:
+ *                   $ref: '#/components/schemas/Pagination'
+ *       400:
+ *         description: Invalid query parameters.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Server error.
  *         content:

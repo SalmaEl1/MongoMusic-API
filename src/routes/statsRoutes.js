@@ -1,8 +1,7 @@
 const express = require('express');
 const {
   getSongsPerArtist,
-  getAverageDurationPerAlbum,
-  getSongsByGenre
+  getAverageDurationPerAlbum
 } = require('../controllers/statsController');
 
 const router = express.Router();
@@ -70,37 +69,5 @@ router.get('/songs-per-artist', getSongsPerArtist);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get('/avg-duration-per-album', getAverageDurationPerAlbum);
-
-/**
- * @swagger
- * /stats/songs-by-genre:
- *   get:
- *     summary: Get song distribution by genre
- *     tags: [Statistics]
- *     responses:
- *       200:
- *         description: Songs by genre statistics retrieved successfully.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: boolean
- *                   example: false
- *                 count:
- *                   type: integer
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/SongsByGenreStat'
- *       500:
- *         description: Server error.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-router.get('/songs-by-genre', getSongsByGenre);
 
 module.exports = router;
