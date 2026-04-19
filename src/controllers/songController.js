@@ -7,6 +7,14 @@ const { AppError, parsePositiveInteger } = require('../middlewares/errorHandler'
 
 const allowedSortFields = new Set(['title', 'duration', 'releaseYear', 'createdAt']);
 
+const MIN_YEAR = 1900;
+const validateYear = (value, label) => {
+  const maxYear = new Date().getFullYear() + 1;
+  if (value < MIN_YEAR || value > maxYear) {
+    throw new AppError(`${label} must be between ${MIN_YEAR} and ${maxYear}.`, 400);
+  }
+};
+
 const songPopulate = [
   {
     path: 'artist',
@@ -83,44 +91,43 @@ const fetchSongById = async (id) =>
 
 const getSongs = asyncHandler(async (req, res) => {
   const page = parsePositiveInteger(req.query.page, 'Page', 1);
-  const limit = parsePositiveInteger(req.query.limit, 'Limit', 10);
+  const limit = Math.min(parsePositiveInteger(req.query.limit, 'Limit', 10), 100);
   const sort = buildSort(req.query.sort);
   const query = {};
 
   if (req.query.search) {
-    query.title = { $regex: escapeRegex(String(req.query.search).trim()), $options: 'i' };
+    const search = String(req.query.search).trim();
+    if (search.length > 200) throw new AppError('search is too long (max 200 characters).', 400);
+    query.title = { $regex: escapeRegex(search), $options: 'i' };
   }
 
   if (req.query.releaseYear !== undefined) {
     const releaseYear = Number(req.query.releaseYear);
     if (!Number.isInteger(releaseYear)) throw new AppError('releaseYear must be an integer.', 400);
+    validateYear(releaseYear, 'releaseYear');
     query.releaseYear = releaseYear;
   } else if (req.query.minReleaseYear !== undefined || req.query.maxReleaseYear !== undefined) {
+    const min = req.query.minReleaseYear !== undefined ? Number(req.query.minReleaseYear) : undefined;
+    const max = req.query.maxReleaseYear !== undefined ? Number(req.query.maxReleaseYear) : undefined;
+    if (min !== undefined && !Number.isInteger(min)) throw new AppError('minReleaseYear must be an integer.', 400);
+    if (max !== undefined && !Number.isInteger(max)) throw new AppError('maxReleaseYear must be an integer.', 400);
+    if (min !== undefined) validateYear(min, 'minReleaseYear');
+    if (max !== undefined) validateYear(max, 'maxReleaseYear');
+    if (min !== undefined && max !== undefined && min > max) throw new AppError('minReleaseYear cannot be greater than maxReleaseYear.', 400);
     query.releaseYear = {};
-    if (req.query.minReleaseYear !== undefined) {
-      const min = Number(req.query.minReleaseYear);
-      if (!Number.isInteger(min)) throw new AppError('minReleaseYear must be an integer.', 400);
-      query.releaseYear.$gte = min;
-    }
-    if (req.query.maxReleaseYear !== undefined) {
-      const max = Number(req.query.maxReleaseYear);
-      if (!Number.isInteger(max)) throw new AppError('maxReleaseYear must be an integer.', 400);
-      query.releaseYear.$lte = max;
-    }
+    if (min !== undefined) query.releaseYear.$gte = min;
+    if (max !== undefined) query.releaseYear.$lte = max;
   }
 
   if (req.query.minDuration !== undefined || req.query.maxDuration !== undefined) {
+    const min = req.query.minDuration !== undefined ? Number(req.query.minDuration) : undefined;
+    const max = req.query.maxDuration !== undefined ? Number(req.query.maxDuration) : undefined;
+    if (min !== undefined && (!Number.isFinite(min) || min <= 0)) throw new AppError('minDuration must be a positive number.', 400);
+    if (max !== undefined && (!Number.isFinite(max) || max <= 0)) throw new AppError('maxDuration must be a positive number.', 400);
+    if (min !== undefined && max !== undefined && min > max) throw new AppError('minDuration cannot be greater than maxDuration.', 400);
     query.duration = {};
-    if (req.query.minDuration !== undefined) {
-      const min = Number(req.query.minDuration);
-      if (!Number.isFinite(min) || min <= 0) throw new AppError('minDuration must be a positive number.', 400);
-      query.duration.$gte = min;
-    }
-    if (req.query.maxDuration !== undefined) {
-      const max = Number(req.query.maxDuration);
-      if (!Number.isFinite(max) || max <= 0) throw new AppError('maxDuration must be a positive number.', 400);
-      query.duration.$lte = max;
-    }
+    if (min !== undefined) query.duration.$gte = min;
+    if (max !== undefined) query.duration.$lte = max;
   }
 
   if (req.query.artist) {

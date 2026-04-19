@@ -22,12 +22,14 @@ const ensureArtistExists = async (artistId) => {
 
 const getAlbums = asyncHandler(async (req, res) => {
   const page = parsePositiveInteger(req.query.page, 'Page', 1);
-  const limit = parsePositiveInteger(req.query.limit, 'Limit', 10);
+  const limit = Math.min(parsePositiveInteger(req.query.limit, 'Limit', 10), 100);
   const skip = (page - 1) * limit;
   const query = {};
 
   if (req.query.title) {
-    query.title = { $regex: escapeRegex(String(req.query.title).trim()), $options: 'i' };
+    const title = String(req.query.title).trim();
+    if (title.length > 200) throw new AppError('title filter is too long (max 200 characters).', 400);
+    query.title = { $regex: escapeRegex(title), $options: 'i' };
   }
 
   if (req.query.artist) {
@@ -38,17 +40,14 @@ const getAlbums = asyncHandler(async (req, res) => {
   }
 
   if (req.query.releaseDateFrom || req.query.releaseDateTo) {
+    const from = req.query.releaseDateFrom ? new Date(req.query.releaseDateFrom) : undefined;
+    const to = req.query.releaseDateTo ? new Date(req.query.releaseDateTo) : undefined;
+    if (from && isNaN(from)) throw new AppError('releaseDateFrom must be a valid date.', 400);
+    if (to && isNaN(to)) throw new AppError('releaseDateTo must be a valid date.', 400);
+    if (from && to && from > to) throw new AppError('releaseDateFrom cannot be after releaseDateTo.', 400);
     query.releaseDate = {};
-    if (req.query.releaseDateFrom) {
-      const date = new Date(req.query.releaseDateFrom);
-      if (isNaN(date)) throw new AppError('releaseDateFrom must be a valid date.', 400);
-      query.releaseDate.$gte = date;
-    }
-    if (req.query.releaseDateTo) {
-      const date = new Date(req.query.releaseDateTo);
-      if (isNaN(date)) throw new AppError('releaseDateTo must be a valid date.', 400);
-      query.releaseDate.$lte = date;
-    }
+    if (from) query.releaseDate.$gte = from;
+    if (to) query.releaseDate.$lte = to;
   }
 
   const [albums, total] = await Promise.all([

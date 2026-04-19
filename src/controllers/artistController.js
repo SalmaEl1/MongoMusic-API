@@ -8,44 +8,42 @@ const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const getArtists = asyncHandler(async (req, res) => {
   const page = parsePositiveInteger(req.query.page, 'Page', 1);
-  const limit = parsePositiveInteger(req.query.limit, 'Limit', 10);
+  const limit = Math.min(parsePositiveInteger(req.query.limit, 'Limit', 10), 100);
   const skip = (page - 1) * limit;
   const query = {};
 
   if (req.query.name) {
-    query.name = { $regex: escapeRegex(String(req.query.name).trim()), $options: 'i' };
+    const name = String(req.query.name).trim();
+    if (name.length > 200) throw new AppError('name filter is too long (max 200 characters).', 400);
+    query.name = { $regex: escapeRegex(name), $options: 'i' };
   }
 
   if (req.query.country) {
-    query.country = { $regex: escapeRegex(String(req.query.country).trim()), $options: 'i' };
+    const country = String(req.query.country).trim();
+    if (country.length > 200) throw new AppError('country filter is too long (max 200 characters).', 400);
+    query.country = { $regex: escapeRegex(country), $options: 'i' };
   }
 
   if (req.query.minFollowers !== undefined || req.query.maxFollowers !== undefined) {
+    const min = req.query.minFollowers !== undefined ? Number(req.query.minFollowers) : undefined;
+    const max = req.query.maxFollowers !== undefined ? Number(req.query.maxFollowers) : undefined;
+    if (min !== undefined && (!Number.isFinite(min) || min < 0)) throw new AppError('minFollowers must be a non-negative number.', 400);
+    if (max !== undefined && (!Number.isFinite(max) || max < 0)) throw new AppError('maxFollowers must be a non-negative number.', 400);
+    if (min !== undefined && max !== undefined && min > max) throw new AppError('minFollowers cannot be greater than maxFollowers.', 400);
     query.followers = {};
-    if (req.query.minFollowers !== undefined) {
-      const min = Number(req.query.minFollowers);
-      if (!Number.isFinite(min) || min < 0) throw new AppError('minFollowers must be a non-negative number.', 400);
-      query.followers.$gte = min;
-    }
-    if (req.query.maxFollowers !== undefined) {
-      const max = Number(req.query.maxFollowers);
-      if (!Number.isFinite(max) || max < 0) throw new AppError('maxFollowers must be a non-negative number.', 400);
-      query.followers.$lte = max;
-    }
+    if (min !== undefined) query.followers.$gte = min;
+    if (max !== undefined) query.followers.$lte = max;
   }
 
   if (req.query.birthDateFrom || req.query.birthDateTo) {
+    const from = req.query.birthDateFrom ? new Date(req.query.birthDateFrom) : undefined;
+    const to = req.query.birthDateTo ? new Date(req.query.birthDateTo) : undefined;
+    if (from && isNaN(from)) throw new AppError('birthDateFrom must be a valid date.', 400);
+    if (to && isNaN(to)) throw new AppError('birthDateTo must be a valid date.', 400);
+    if (from && to && from > to) throw new AppError('birthDateFrom cannot be after birthDateTo.', 400);
     query.birthDate = {};
-    if (req.query.birthDateFrom) {
-      const date = new Date(req.query.birthDateFrom);
-      if (isNaN(date)) throw new AppError('birthDateFrom must be a valid date.', 400);
-      query.birthDate.$gte = date;
-    }
-    if (req.query.birthDateTo) {
-      const date = new Date(req.query.birthDateTo);
-      if (isNaN(date)) throw new AppError('birthDateTo must be a valid date.', 400);
-      query.birthDate.$lte = date;
-    }
+    if (from) query.birthDate.$gte = from;
+    if (to) query.birthDate.$lte = to;
   }
 
   const [artists, total] = await Promise.all([
