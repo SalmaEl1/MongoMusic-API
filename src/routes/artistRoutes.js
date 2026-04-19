@@ -26,35 +26,6 @@ const router = express.Router();
  *           type: string
  *         description: Filter by name (contains, case-insensitive).
  *       - in: query
- *         name: country
- *         schema:
- *           type: string
- *         description: Filter by country (contains, case-insensitive).
- *       - in: query
- *         name: minFollowers
- *         schema:
- *           type: number
- *           minimum: 0
- *         description: Filter artists with followers >= this value.
- *       - in: query
- *         name: maxFollowers
- *         schema:
- *           type: number
- *           minimum: 0
- *         description: Filter artists with followers <= this value.
- *       - in: query
- *         name: birthDateFrom
- *         schema:
- *           type: string
- *           format: date
- *         description: Filter artists born on or after this date (YYYY-MM-DD).
- *       - in: query
- *         name: birthDateTo
- *         schema:
- *           type: string
- *           format: date
- *         description: Filter artists born on or before this date (YYYY-MM-DD).
- *       - in: query
  *         name: page
  *         schema:
  *           type: integer

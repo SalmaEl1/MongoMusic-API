@@ -8,17 +8,6 @@ const artistSchema = new mongoose.Schema(
       unique: true,
       trim: true
     },
-    country: {
-      type: String,
-      trim: true
-    },
-    followers: {
-      type: Number,
-      min: [0, 'Followers cannot be negative.']
-    },
-    birthDate: {
-      type: Date
-    }
   },
   {
     timestamps: { createdAt: true, updatedAt: false },

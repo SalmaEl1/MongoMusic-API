@@ -9,7 +9,7 @@ const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const albumPopulate = {
   path: 'artist',
-  select: 'name country followers birthDate createdAt'
+  select: 'name createdAt'
 };
 
 const ensureArtistExists = async (artistId) => {

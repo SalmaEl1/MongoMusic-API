@@ -18,34 +18,6 @@ const getArtists = asyncHandler(async (req, res) => {
     query.name = { $regex: escapeRegex(name), $options: 'i' };
   }
 
-  if (req.query.country) {
-    const country = String(req.query.country).trim();
-    if (country.length > 200) throw new AppError('country filter is too long (max 200 characters).', 400);
-    query.country = { $regex: escapeRegex(country), $options: 'i' };
-  }
-
-  if (req.query.minFollowers !== undefined || req.query.maxFollowers !== undefined) {
-    const min = req.query.minFollowers !== undefined ? Number(req.query.minFollowers) : undefined;
-    const max = req.query.maxFollowers !== undefined ? Number(req.query.maxFollowers) : undefined;
-    if (min !== undefined && (!Number.isFinite(min) || min < 0)) throw new AppError('minFollowers must be a non-negative number.', 400);
-    if (max !== undefined && (!Number.isFinite(max) || max < 0)) throw new AppError('maxFollowers must be a non-negative number.', 400);
-    if (min !== undefined && max !== undefined && min > max) throw new AppError('minFollowers cannot be greater than maxFollowers.', 400);
-    query.followers = {};
-    if (min !== undefined) query.followers.$gte = min;
-    if (max !== undefined) query.followers.$lte = max;
-  }
-
-  if (req.query.birthDateFrom || req.query.birthDateTo) {
-    const from = req.query.birthDateFrom ? new Date(req.query.birthDateFrom) : undefined;
-    const to = req.query.birthDateTo ? new Date(req.query.birthDateTo) : undefined;
-    if (from && isNaN(from)) throw new AppError('birthDateFrom must be a valid date.', 400);
-    if (to && isNaN(to)) throw new AppError('birthDateTo must be a valid date.', 400);
-    if (from && to && from > to) throw new AppError('birthDateFrom cannot be after birthDateTo.', 400);
-    query.birthDate = {};
-    if (from) query.birthDate.$gte = from;
-    if (to) query.birthDate.$lte = to;
-  }
-
   const [artists, total] = await Promise.all([
     Artist.find(query).sort({ name: 1 }).skip(skip).limit(limit).lean(),
     Artist.countDocuments(query)
@@ -78,10 +50,7 @@ const getArtistById = asyncHandler(async (req, res) => {
 
 const createArtist = asyncHandler(async (req, res) => {
   const artist = await Artist.create({
-    name: req.body.name.trim(),
-    country: req.body.country?.trim(),
-    followers: req.body.followers,
-    birthDate: req.body.birthDate
+    name: req.body.name.trim()
   });
 
   res.status(201).json({
@@ -95,10 +64,7 @@ const updateArtist = asyncHandler(async (req, res) => {
   const artist = await Artist.findByIdAndUpdate(
     req.params.id,
     {
-      name: req.body.name.trim(),
-      country: req.body.country?.trim(),
-      followers: req.body.followers,
-      birthDate: req.body.birthDate
+      name: req.body.name.trim()
     },
     {
       new: true,

@@ -27,20 +27,6 @@ const options = {
               type: 'string',
               example: 'Radiohead'
             },
-            country: {
-              type: 'string',
-              example: 'United Kingdom'
-            },
-            followers: {
-              type: 'number',
-              minimum: 0,
-              example: 12500000
-            },
-            birthDate: {
-              type: 'string',
-              format: 'date',
-              example: '1985-01-01'
-            }
           }
         },
         Artist: {

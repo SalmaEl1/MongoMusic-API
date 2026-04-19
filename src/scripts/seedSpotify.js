@@ -189,30 +189,9 @@ const seedFromSpotify = async () => {
     }
   }
 
-  // Keep only the artists explicitly requested in SPOTIFY_ARTISTS.
-  const uniqueArtistNames = new Set();
-  for (const spotifyArtist of artistsBySpotifyId.values()) {
-    uniqueArtistNames.add(spotifyArtist.name);
-  }
-
-  const artistDocs = [];
-  for (const artistName of uniqueArtistNames) {
-    const knownSpotifyArtist = Array.from(artistsBySpotifyId.values()).find(
-      (artist) => normalize(artist.name) === normalize(artistName),
-    );
-
-    const artistDoc = {
-      name: artistName,
-      country: undefined,
-      birthDate: undefined,
-    };
-
-    if (Number.isFinite(knownSpotifyArtist?.followers?.total)) {
-      artistDoc.followers = knownSpotifyArtist.followers.total;
-    }
-
-    artistDocs.push(artistDoc);
-  }
+  const artistDocs = Array.from(artistsBySpotifyId.values()).map((spotifyArtist) => ({
+    name: spotifyArtist.name
+  }));
 
   const createdArtists = await Artist.insertMany(artistDocs, { ordered: false });
   const artistsByName = new Map(createdArtists.map((artist) => [normalize(artist.name), artist]));

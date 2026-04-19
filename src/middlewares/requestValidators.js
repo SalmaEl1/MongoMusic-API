@@ -80,9 +80,6 @@ const createArtistValidator = (req) => {
   }
 
   validateRequiredString(body.name, 'Name', errors);
-  validateOptionalString(body.country, 'Country', errors);
-  validatePositiveNumber(body.followers, 'Followers', errors, { allowZero: true, integer: true });
-  validateOptionalDate(body.birthDate, 'Birth date', errors);
 
   return errors;
 };

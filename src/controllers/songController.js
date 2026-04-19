@@ -18,14 +18,14 @@ const validateYear = (value, label) => {
 const songPopulate = [
   {
     path: 'artist',
-    select: 'name country followers birthDate createdAt'
+    select: 'name followers createdAt'
   },
   {
     path: 'album',
     select: 'title releaseDate artist createdAt',
     populate: {
       path: 'artist',
-      select: 'name country followers birthDate createdAt'
+      select: 'name createdAt'
     }
   }
 ];

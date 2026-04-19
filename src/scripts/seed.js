@@ -7,47 +7,13 @@ const Album = require('../models/Album');
 const Song = require('../models/Song');
 
 const artistsData = [
-  {
-    name: 'Aitana',
-    country: 'Spain',
-    followers: 0,
-    birthDate: new Date('1999-06-27')
-  },
-  {
-    name: 'Melendi',
-    country: 'Spain',
-    followers: 0,
-    birthDate: new Date('1979-01-21')
-  },
-  {
-    name: 'Tawsen',
-    country: 'Morocco',
-    followers: 0
-  },
-  {
-    name: 'Burna Boy',
-    country: 'Nigeria',
-    followers: 0,
-    birthDate: new Date('1991-07-02')
-  },
-  {
-    name: 'Dua Lipa',
-    country: 'United Kingdom',
-    followers: 0,
-    birthDate: new Date('1995-08-22')
-  },
-  {
-    name: 'Stromae',
-    country: 'Belgium',
-    followers: 0,
-    birthDate: new Date('1985-03-12')
-  },
-  {
-    name: 'Bad Bunny',
-    country: 'Puerto Rico',
-    followers: 0,
-    birthDate: new Date('1994-03-10')
-  }
+  { name: 'Aitana' },
+  { name: 'Melendi' },
+  { name: 'Tawsen' },
+  { name: 'Burna Boy' },
+  { name: 'Dua Lipa' },
+  { name: 'Stromae' },
+  { name: 'Bad Bunny' }
 ];
 
 const albumsData = [
