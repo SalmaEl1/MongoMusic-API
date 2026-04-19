@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const express = require('express');
+const path = require('path');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
 const albumRoutes = require('./routes/albumRoutes');
@@ -14,8 +15,10 @@ const app = express();
 
 app.use(express.json());
 app.use(logger);
+app.use(express.static(path.join(__dirname, '../public')));
+app.use('/vendor/bootstrap-icons', express.static(path.join(__dirname, '../node_modules/bootstrap-icons')));
 
-app.get('/', (req, res) => {
+app.get('/health', (req, res) => {
   res.status(200).json({
     error: false,
     message: 'Mongo Music API is running.',

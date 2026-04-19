@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>MongoMusic Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/vendor/bootstrap-icons/font/bootstrap-icons.css"/>
+<link rel="stylesheet" href="/styles.css"/>
+</head>
+<body>
+<div class="shell">
+
+<header class="topbar">
+  <div class="logo-mark">
+    <i class="bi bi-music-note-beamed"></i>
+  </div>
+  <span class="topbar-title">Mongo<em>Music</em> Explorer</span>
+  <div class="topbar-api">
+    <span class="api-dot"></span>
+    localhost:5000
+  </div>
+</header>
+
+<nav class="sidebar">
+  <div class="nav-section-label">Explorar</div>
+  <button class="nav-btn active" data-s="artists" onclick="navigate('artists')">
+    <i class="bi bi-person-lines-fill ni"></i>
+    Artistas
+    <span class="nd"></span>
+  </button>
+  <button class="nav-btn" data-s="albums" onclick="navigate('albums')">
+    <i class="bi bi-vinyl-fill ni"></i>
+    Álbumes
+    <span class="nd"></span>
+  </button>
+  <button class="nav-btn" data-s="songs" onclick="navigate('songs')">
+    <i class="bi bi-music-note-list ni"></i>
+    Canciones
+    <span class="nd"></span>
+  </button>
+  <button class="nav-btn" data-s="stats" onclick="navigate('stats')">
+    <i class="bi bi-bar-chart-line-fill ni"></i>
+    Estadísticas
+    <span class="nd"></span>
+  </button>
+</nav>
+
+<main class="main">
+  <section id="sec-artists" class="section visible">
+    <div class="sec-hdr">
+      <h2>Artistas</h2>
+      <span class="pill pv">GET /artists</span>
+      <span class="cnt" id="artists-cnt"></span>
+    </div>
+    <div class="filters">
+      <div class="fgrp"><label>Nombre</label><input id="f-artist-name" class="fi fi-lg" placeholder="ej. Taylor Swift"/></div>
+      <div class="fgrp"><label>Por página</label>
+        <select id="f-artist-limit" class="fi" style="width:80px">
+          <option value="10">10</option><option value="20">20</option><option value="50">50</option>
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-ghost" onclick="resetArtists()">Limpiar</button>
+        <button class="btn btn-primary" onclick="loadArtists(1)">Buscar</button>
+      </div>
+    </div>
+    <div id="artists-err"></div>
+    <div id="artists-container"></div>
+    <div id="artists-pages"></div>
+  </section>
+
+  <section id="sec-albums" class="section">
+    <div class="sec-hdr">
+      <h2>Álbumes</h2>
+      <span class="pill pt">GET /albums</span>
+      <span class="cnt" id="albums-cnt"></span>
+    </div>
+    <div class="filters">
+      <div class="fgrp"><label>Título</label><input id="f-album-title" class="fi fi-lg" placeholder="ej. 1989"/></div>
+      <div class="fgrp"><label>Fecha desde</label><input id="f-album-from" class="fi fi-md" type="date"/></div>
+      <div class="fgrp"><label>Fecha hasta</label><input id="f-album-to" class="fi fi-md" type="date"/></div>
+      <div class="fgrp"><label>Por página</label>
+        <select id="f-album-limit" class="fi" style="width:80px">
+          <option value="10">10</option><option value="20">20</option><option value="50">50</option>
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-ghost" onclick="resetAlbums()">Limpiar</button>
+        <button class="btn btn-teal" onclick="loadAlbums(1)">Buscar</button>
+      </div>
+    </div>
+    <div id="albums-err"></div>
+    <div id="albums-container"></div>
+    <div id="albums-pages"></div>
+  </section>
+
+  <section id="sec-songs" class="section">
+    <div class="sec-hdr">
+      <h2>Canciones</h2>
+      <span class="pill pa">GET /songs</span>
+      <span class="cnt" id="songs-cnt"></span>
+    </div>
+    <div class="filters">
+      <div class="fgrp"><label>Título</label><input id="f-song-search" class="fi fi-lg" placeholder="Buscar por título..."/></div>
+      <div class="fgrp"><label>Año exacto</label><input id="f-song-year" class="fi fi-sm" type="number" min="1900" max="2026" placeholder="ej. 2020"/></div>
+      <div class="fgrp"><label>Año desde</label><input id="f-song-miny" class="fi fi-sm" type="number" min="1900" max="2026" placeholder="1900"/></div>
+      <div class="fgrp"><label>Año hasta</label><input id="f-song-maxy" class="fi fi-sm" type="number" min="1900" max="2026" placeholder="2026"/></div>
+      <div class="fgrp"><label>Dur. min (s)</label><input id="f-song-mind" class="fi fi-sm" type="number" min="0" placeholder="0"/></div>
+      <div class="fgrp"><label>Dur. max (s)</label><input id="f-song-maxd" class="fi fi-sm" type="number" min="0" placeholder="∞"/></div>
+      <div class="fgrp"><label>Ordenar</label>
+        <select id="f-song-sort" class="fi" style="width:160px">
+          <option value="">Recientes primero</option>
+          <option value="title">Título A→Z</option>
+          <option value="-title">Título Z→A</option>
+          <option value="-releaseYear">Año ↓</option>
+          <option value="releaseYear">Año ↑</option>
+          <option value="-duration">Duración ↓</option>
+          <option value="duration">Duración ↑</option>
+        </select>
+      </div>
+      <div class="fgrp"><label>Por página</label>
+        <select id="f-song-limit" class="fi" style="width:80px">
+          <option value="10">10</option><option value="20">20</option><option value="50">50</option>
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-ghost" onclick="resetSongs()">Limpiar</button>
+        <button class="btn btn-amber" onclick="loadSongs(1)">Buscar</button>
+      </div>
+    </div>
+    <div id="songs-err"></div>
+    <div id="songs-container"></div>
+    <div id="songs-pages"></div>
+  </section>
+
+  <section id="sec-stats" class="section">
+    <div class="sec-hdr">
+      <h2>Estadísticas</h2>
+      <span class="pill ps">Análisis</span>
+    </div>
+    <div id="stats-err"></div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-head">
+          <i class="bi bi-people-fill"></i>
+          <h3>Canciones por artista</h3>
+        </div>
+        <div id="stats-spa"></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-head">
+          <i class="bi bi-vinyl-fill"></i>
+          <h3>Duración media por álbum</h3>
+        </div>
+        <div id="stats-avg"></div>
+      </div>
+    </div>
+  </section>
+</main>
+</div>
+
+<div class="panel-overlay" id="overlay" onclick="closePanel()"></div>
+<div class="panel" id="panel">
+  <div class="panel-head">
+    <div>
+      <div class="panel-title" id="panel-title"></div>
+      <div class="panel-sub" id="panel-sub"></div>
+    </div>
+    <button class="panel-close" onclick="closePanel()">×</button>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>
