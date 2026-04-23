@@ -1,13 +1,11 @@
-const API = 'http://localhost:5000';
-
 const I = {
-  mic:'<i class="bi bi-mic-fill"></i>',
-  disc:'<i class="bi bi-vinyl-fill"></i>',
-  note:'<i class="bi bi-music-note-beamed"></i>',
-  cal:'<i class="bi bi-calendar3"></i>',
-  clock:'<i class="bi bi-clock-history"></i>',
-  alert:'<i class="bi bi-exclamation-octagon-fill"></i>',
-  empty:'<i class="bi bi-inbox"></i>',
+  mic: '<i class="bi bi-mic-fill"></i>',
+  disc: '<i class="bi bi-vinyl-fill"></i>',
+  note: '<i class="bi bi-music-note-beamed"></i>',
+  cal: '<i class="bi bi-calendar3"></i>',
+  clock: '<i class="bi bi-clock-history"></i>',
+  alert: '<i class="bi bi-exclamation-octagon-fill"></i>',
+  empty: '<i class="bi bi-inbox"></i>',
 };
 
 const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -19,7 +17,7 @@ const errHTML = m => `<div class="err-box">${I.alert}<span>${m}</span></div>`;
 const q = id => document.getElementById(id);
 
 async function apiFetch(path) {
-  const res = await fetch(`${API}${path}`);
+  const res = await fetch(path);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json();
   if (json.error) throw new Error('La API devolvió un error.');
