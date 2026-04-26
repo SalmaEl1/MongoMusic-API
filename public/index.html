@@ -52,6 +52,7 @@
     <div class="sec-hdr">
       <h2>Artistas</h2>
       <span class="pill pv">GET /artists</span>
+      <button class="btn btn-primary" onclick="openArtistForm()"><i class="bi bi-plus-lg"></i> Nuevo artista</button>
       <span class="cnt" id="artists-cnt"></span>
     </div>
     <div class="filters">
@@ -75,6 +76,7 @@
     <div class="sec-hdr">
       <h2>Álbumes</h2>
       <span class="pill pt">GET /albums</span>
+      <button class="btn btn-teal" onclick="openAlbumForm()"><i class="bi bi-plus-lg"></i> Nuevo álbum</button>
       <span class="cnt" id="albums-cnt"></span>
     </div>
     <div class="filters">
@@ -100,6 +102,7 @@
     <div class="sec-hdr">
       <h2>Canciones</h2>
       <span class="pill pa">GET /songs</span>
+      <button class="btn btn-amber" onclick="openSongForm()"><i class="bi bi-plus-lg"></i> Nueva canción</button>
       <span class="cnt" id="songs-cnt"></span>
     </div>
     <div class="filters">
@@ -172,6 +175,16 @@
   </div>
   <div class="panel-body" id="panel-body"></div>
 </div>
+
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal()"></div>
+<div class="modal" id="modal">
+  <div class="modal-head">
+    <span class="modal-title" id="modal-title"></span>
+    <button class="panel-close" onclick="closeModal()">×</button>
+  </div>
+  <div class="modal-body" id="modal-body"></div>
+</div>
+<div class="toast" id="toast"></div>
 
 <script src="/app.js"></script>
 </body>

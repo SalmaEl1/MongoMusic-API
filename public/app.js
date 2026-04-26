@@ -6,6 +6,8 @@ const I = {
   clock: '<i class="bi bi-clock-history"></i>',
   alert: '<i class="bi bi-exclamation-octagon-fill"></i>',
   empty: '<i class="bi bi-inbox"></i>',
+  edit: '<i class="bi bi-pencil-fill"></i>',
+  trash: '<i class="bi bi-trash3-fill"></i>',
 };
 
 const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -24,6 +26,19 @@ async function apiFetch(path) {
   return json;
 }
 
+async function apiMutate(method, path, body) {
+  const res = await fetch(path, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: body != null ? JSON.stringify(body) : undefined
+  });
+  const json = await res.json();
+  if (!res.ok || json.error) throw new Error(json.message || `HTTP ${res.status}`);
+  return json;
+}
+
+// ── Navigation ─────────────────────────────────────────────────────
+
 const secs = ['artists', 'albums', 'songs', 'stats'];
 const loadedSecs = {};
 
@@ -37,8 +52,8 @@ function navigate(name) {
     if (name === 'artists') loadArtists(1);
     if (name === 'albums') loadAlbums(1);
     if (name === 'songs') loadSongs(1);
-    if (name === 'stats') loadStats();
   }
+  if (name === 'stats') loadStats();
 }
 
 function paginationHTML(pagination, loadFn) {
@@ -56,6 +71,42 @@ function paginationHTML(pagination, loadFn) {
   </div>`;
 }
 
+// ── Modal ──────────────────────────────────────────────────────────
+
+function openModal(title, bodyHTML) {
+  q('modal-title').textContent = title;
+  q('modal-body').innerHTML = bodyHTML;
+  q('modal-overlay').classList.add('open');
+  q('modal').classList.add('open');
+}
+
+function closeModal() {
+  q('modal-overlay').classList.remove('open');
+  q('modal').classList.remove('open');
+}
+
+function setModalErr(msg) {
+  const el = q('mfm-err');
+  if (el) el.innerHTML = msg ? errHTML(msg) : '';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); closePanel(); }
+});
+
+// ── Toast ──────────────────────────────────────────────────────────
+
+let _toastTimer;
+function showToast(msg, type = 'ok') {
+  const t = q('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { t.className = 'toast'; }, 3000);
+}
+
+// ── Artists ────────────────────────────────────────────────────────
+
 async function loadArtists(page = 1) {
   q('artists-container').innerHTML = spinner();
   q('artists-err').innerHTML = '';
@@ -69,7 +120,7 @@ async function loadArtists(page = 1) {
     const { data, pagination } = await apiFetch(`/artists?${params}`);
     q('artists-cnt').textContent = pagination ? `${pagination.total} artistas` : `${data.length} artistas`;
     if (!data.length) { q('artists-container').innerHTML = empty('No se encontraron artistas'); return; }
-    q('artists-container').innerHTML = `<div class="cards-grid">${data.map(a => artistCard(a)).join('')}</div>`;
+    q('artists-container').innerHTML = `<div class="cards-grid">${data.map(artistCard).join('')}</div>`;
     q('artists-pages').innerHTML = paginationHTML(pagination, 'loadArtists');
   } catch (e) {
     q('artists-err').innerHTML = errHTML(`No se pudo conectar con la API: ${e.message}`);
@@ -85,13 +136,74 @@ function artistCard(a) {
     <div class="card-meta">
       <div class="mrow">${I.cal}<span class="mono">${fmtDate(a.createdAt)}</span></div>
     </div>
+    <div class="card-actions">
+      <button class="card-action-btn" onclick="event.stopPropagation();openArtistForm('${a._id}')">${I.edit} Editar</button>
+      <button class="card-action-btn del" onclick="event.stopPropagation();confirmDeleteArtist('${a._id}','${esc(a.name)}')">${I.trash}</button>
+    </div>
   </div>`;
 }
 
 function resetArtists() {
-  ['f-artist-name'].forEach(id => q(id).value = '');
+  q('f-artist-name').value = '';
   loadArtists(1);
 }
+
+function openArtistForm(id) {
+  const isEdit = id != null;
+  const idArg = isEdit ? `'${id}'` : 'null';
+  openModal(isEdit ? 'Editar artista' : 'Nuevo artista', `
+    <div id="mfm-err"></div>
+    <div class="form-row">
+      <label>Nombre *</label>
+      <input id="mfm-name" class="fi" placeholder="Nombre del artista"/>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="submitArtistForm(${idArg})">${isEdit ? 'Guardar cambios' : 'Crear artista'}</button>
+    </div>`);
+  if (isEdit) {
+    fetch(`/artists/${id}`).then(r => r.json()).then(j => {
+      if (!j.error && q('mfm-name')) q('mfm-name').value = j.data.name;
+    });
+  }
+  setTimeout(() => q('mfm-name') && q('mfm-name').focus(), 60);
+}
+
+async function submitArtistForm(id) {
+  const name = (q('mfm-name').value || '').trim();
+  if (!name) { setModalErr('El nombre es obligatorio.'); return; }
+  try {
+    await apiMutate(id ? 'PUT' : 'POST', id ? `/artists/${id}` : '/artists', { name });
+    closeModal();
+    showToast(id ? 'Artista actualizado.' : 'Artista creado.');
+    loadArtists(1);
+  } catch (e) {
+    setModalErr(e.message);
+  }
+}
+
+function confirmDeleteArtist(id, name) {
+  openModal('Eliminar artista', `
+    <div id="mfm-err"></div>
+    <p class="confirm-msg">¿Seguro que quieres eliminar <strong>${esc(name)}</strong>?<br>Esta acción no se puede deshacer.</p>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="doDeleteArtist('${id}')">Eliminar</button>
+    </div>`);
+}
+
+async function doDeleteArtist(id) {
+  try {
+    await apiMutate('DELETE', `/artists/${id}`);
+    closeModal();
+    showToast('Artista eliminado.');
+    loadArtists(1);
+  } catch (e) {
+    setModalErr(e.message);
+  }
+}
+
+// ── Albums ─────────────────────────────────────────────────────────
 
 async function loadAlbums(page = 1) {
   q('albums-container').innerHTML = spinner();
@@ -128,6 +240,10 @@ function albumCard(a) {
       <div class="mrow">${I.mic}<span>${esc(artist)}</span></div>
       <div class="mrow">${I.cal}<span class="mono">${fmtDate(a.releaseDate)}</span></div>
     </div>
+    <div class="card-actions">
+      <button class="card-action-btn" onclick="event.stopPropagation();openAlbumForm('${a._id}')">${I.edit} Editar</button>
+      <button class="card-action-btn del" onclick="event.stopPropagation();confirmDeleteAlbum('${a._id}','${esc(a.title)}')">${I.trash}</button>
+    </div>
   </div>`;
 }
 
@@ -135,6 +251,84 @@ function resetAlbums() {
   ['f-album-title', 'f-album-from', 'f-album-to'].forEach(id => q(id).value = '');
   loadAlbums(1);
 }
+
+async function openAlbumForm(id) {
+  const isEdit = id != null;
+  const idArg = isEdit ? `'${id}'` : 'null';
+  openModal(isEdit ? 'Editar álbum' : 'Nuevo álbum', spinner());
+  let artists = [];
+  try { artists = (await apiFetch('/artists?limit=200')).data || []; } catch {}
+  const aopts = artists.map(a => `<option value="${a._id}">${esc(a.name)}</option>`).join('');
+  q('modal-body').innerHTML = `
+    <div id="mfm-err"></div>
+    <div class="form-row">
+      <label>Título *</label>
+      <input id="mfm-title" class="fi" placeholder="Título del álbum"/>
+    </div>
+    <div class="form-row">
+      <label>Artista *</label>
+      <select id="mfm-artist" class="fi">
+        <option value="">Seleccionar artista…</option>
+        ${aopts}
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Fecha de lanzamiento</label>
+      <input id="mfm-date" class="fi" type="date"/>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-teal" onclick="submitAlbumForm(${idArg})">${isEdit ? 'Guardar cambios' : 'Crear álbum'}</button>
+    </div>`;
+  if (isEdit) {
+    try {
+      const { data } = await apiFetch(`/albums/${id}`);
+      q('mfm-title').value = data.title;
+      q('mfm-artist').value = data.artist?._id || data.artist || '';
+      if (data.releaseDate) q('mfm-date').value = data.releaseDate.slice(0, 10);
+    } catch {}
+  }
+  setTimeout(() => q('mfm-title') && q('mfm-title').focus(), 60);
+}
+
+async function submitAlbumForm(id) {
+  const title = (q('mfm-title').value || '').trim();
+  const artist = q('mfm-artist').value;
+  const releaseDate = q('mfm-date').value || null;
+  if (!title) { setModalErr('El título es obligatorio.'); return; }
+  if (!artist) { setModalErr('El artista es obligatorio.'); return; }
+  try {
+    await apiMutate(id ? 'PUT' : 'POST', id ? `/albums/${id}` : '/albums', { title, artist, releaseDate });
+    closeModal();
+    showToast(id ? 'Álbum actualizado.' : 'Álbum creado.');
+    loadAlbums(1);
+  } catch (e) {
+    setModalErr(e.message);
+  }
+}
+
+function confirmDeleteAlbum(id, title) {
+  openModal('Eliminar álbum', `
+    <div id="mfm-err"></div>
+    <p class="confirm-msg">¿Seguro que quieres eliminar <strong>${esc(title)}</strong>?<br>Esta acción no se puede deshacer.</p>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="doDeleteAlbum('${id}')">Eliminar</button>
+    </div>`);
+}
+
+async function doDeleteAlbum(id) {
+  try {
+    await apiMutate('DELETE', `/albums/${id}`);
+    closeModal();
+    showToast('Álbum eliminado.');
+    loadAlbums(1);
+  } catch (e) {
+    setModalErr(e.message);
+  }
+}
+
+// ── Songs ──────────────────────────────────────────────────────────
 
 async function loadSongs(page = 1) {
   q('songs-container').innerHTML = spinner();
@@ -186,6 +380,10 @@ function songCard(s) {
       <div class="mrow">${I.clock}<span class="mono">${toMMSS(s.duration)}</span></div>
       <div class="mrow">${I.cal}<span class="mono">${s.releaseYear || '—'}</span></div>
     </div>
+    <div class="card-actions">
+      <button class="card-action-btn" onclick="openSongForm('${s._id}')">${I.edit} Editar</button>
+      <button class="card-action-btn del" onclick="confirmDeleteSong('${s._id}','${esc(s.title)}')">${I.trash}</button>
+    </div>
   </div>`;
 }
 
@@ -194,6 +392,126 @@ function resetSongs() {
   q('f-song-sort').value = '';
   loadSongs(1);
 }
+
+async function openSongForm(id) {
+  const isEdit = id != null;
+  const idArg = isEdit ? `'${id}'` : 'null';
+  openModal(isEdit ? 'Editar canción' : 'Nueva canción', spinner());
+  let artists = [], albums = [];
+  try {
+    const [ar, al] = await Promise.all([apiFetch('/artists?limit=200'), apiFetch('/albums?limit=200')]);
+    artists = ar.data || [];
+    albums = al.data || [];
+  } catch {}
+  window._sfAlbums = albums;
+  const aopts = artists.map(a => `<option value="${a._id}">${esc(a.name)}</option>`).join('');
+  const balopts = albums.map(a => {
+    const aname = a.artist?.name ? ` — ${esc(a.artist.name)}` : '';
+    return `<option value="${a._id}" data-artist="${a.artist?._id || a.artist || ''}">${esc(a.title)}${aname}</option>`;
+  }).join('');
+  q('modal-body').innerHTML = `
+    <div id="mfm-err"></div>
+    <div class="form-row">
+      <label>Título *</label>
+      <input id="mfm-title" class="fi" placeholder="Título de la canción"/>
+    </div>
+    <div class="form-row">
+      <label>Duración (segundos) *</label>
+      <input id="mfm-dur" class="fi" type="number" min="1" step="1" placeholder="ej. 210"/>
+    </div>
+    <div class="form-row">
+      <label>Año de lanzamiento</label>
+      <input id="mfm-year" class="fi" type="number" min="1900" max="2027" placeholder="ej. 2023"/>
+    </div>
+    <div class="form-row">
+      <label>Artista *</label>
+      <select id="mfm-artist" class="fi" onchange="filterSongAlbums()">
+        <option value="">Seleccionar artista…</option>
+        ${aopts}
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Álbum *</label>
+      <select id="mfm-album" class="fi">
+        <option value="">Seleccionar álbum…</option>
+        ${balopts}
+      </select>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-amber" onclick="submitSongForm(${idArg})">${isEdit ? 'Guardar cambios' : 'Crear canción'}</button>
+    </div>`;
+  if (isEdit) {
+    try {
+      const { data } = await apiFetch(`/songs/${id}`);
+      q('mfm-title').value = data.title;
+      q('mfm-dur').value = data.duration;
+      if (data.releaseYear) q('mfm-year').value = data.releaseYear;
+      const artistId = data.artist?._id || data.artist || '';
+      q('mfm-artist').value = artistId;
+      filterSongAlbums();
+      q('mfm-album').value = data.album?._id || data.album || '';
+    } catch {}
+  }
+  setTimeout(() => q('mfm-title') && q('mfm-title').focus(), 60);
+}
+
+function filterSongAlbums() {
+  const artistId = q('mfm-artist')?.value;
+  const albums = window._sfAlbums || [];
+  const prev = q('mfm-album')?.value;
+  const filtered = artistId ? albums.filter(a => (a.artist?._id || a.artist) === artistId) : albums;
+  const opts = filtered.map(a => `<option value="${a._id}">${esc(a.title)}</option>`).join('');
+  if (q('mfm-album')) {
+    q('mfm-album').innerHTML = `<option value="">Seleccionar álbum…</option>${opts}`;
+    if (filtered.some(a => a._id === prev)) q('mfm-album').value = prev;
+  }
+}
+
+async function submitSongForm(id) {
+  const title = (q('mfm-title').value || '').trim();
+  const duration = Number(q('mfm-dur').value);
+  const releaseYear = q('mfm-year').value ? Number(q('mfm-year').value) : undefined;
+  const artist = q('mfm-artist').value;
+  const album = q('mfm-album').value;
+  if (!title) { setModalErr('El título es obligatorio.'); return; }
+  if (!duration || duration <= 0) { setModalErr('La duración debe ser un número positivo.'); return; }
+  if (!artist) { setModalErr('El artista es obligatorio.'); return; }
+  if (!album) { setModalErr('El álbum es obligatorio.'); return; }
+  const body = { title, duration, artist, album };
+  if (releaseYear) body.releaseYear = releaseYear;
+  try {
+    await apiMutate(id ? 'PUT' : 'POST', id ? `/songs/${id}` : '/songs', body);
+    closeModal();
+    showToast(id ? 'Canción actualizada.' : 'Canción creada.');
+    loadSongs(1);
+  } catch (e) {
+    setModalErr(e.message);
+  }
+}
+
+function confirmDeleteSong(id, title) {
+  openModal('Eliminar canción', `
+    <div id="mfm-err"></div>
+    <p class="confirm-msg">¿Seguro que quieres eliminar <strong>${esc(title)}</strong>?<br>Esta acción no se puede deshacer.</p>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="doDeleteSong('${id}')">Eliminar</button>
+    </div>`);
+}
+
+async function doDeleteSong(id) {
+  try {
+    await apiMutate('DELETE', `/songs/${id}`);
+    closeModal();
+    showToast('Canción eliminada.');
+    loadSongs(1);
+  } catch (e) {
+    setModalErr(e.message);
+  }
+}
+
+// ── Stats ──────────────────────────────────────────────────────────
 
 async function loadStats() {
   q('stats-err').innerHTML = '';
@@ -241,6 +559,8 @@ async function loadAvgDuration() {
     el.innerHTML = errHTML(`Error: ${e.message}`);
   }
 }
+
+// ── Panel (side panel for song lists) ─────────────────────────────
 
 function openPanel(title, sub) {
   q('panel-title').textContent = title;
@@ -293,6 +613,8 @@ function songRow(s) {
   </div>`;
 }
 
+// ── Init ───────────────────────────────────────────────────────────
+
 q('f-song-search').addEventListener('keydown', e => {
   if (e.key === 'Enter') loadSongs(1);
 });
@@ -308,5 +630,19 @@ window.resetAlbums = resetAlbums;
 window.loadSongs = loadSongs;
 window.resetSongs = resetSongs;
 window.closePanel = closePanel;
+window.closeModal = closeModal;
 window.openArtistPanel = openArtistPanel;
 window.openAlbumPanel = openAlbumPanel;
+window.openArtistForm = openArtistForm;
+window.openAlbumForm = openAlbumForm;
+window.openSongForm = openSongForm;
+window.submitArtistForm = submitArtistForm;
+window.submitAlbumForm = submitAlbumForm;
+window.submitSongForm = submitSongForm;
+window.confirmDeleteArtist = confirmDeleteArtist;
+window.confirmDeleteAlbum = confirmDeleteAlbum;
+window.confirmDeleteSong = confirmDeleteSong;
+window.doDeleteArtist = doDeleteArtist;
+window.doDeleteAlbum = doDeleteAlbum;
+window.doDeleteSong = doDeleteSong;
+window.filterSongAlbums = filterSongAlbums;
