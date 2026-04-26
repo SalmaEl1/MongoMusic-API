@@ -5,7 +5,7 @@ const validateObjectId = (paramName = 'id') => (req, res, next) => {
   const value = req.params[paramName];
 
   if (!mongoose.Types.ObjectId.isValid(value)) {
-    return next(new AppError(`Invalid ObjectId format for parameter "${paramName}".`, 400));
+    return next(new AppError(`Formato de ObjectId inválido para el parámetro "${paramName}".`, 400));
   }
 
   next();

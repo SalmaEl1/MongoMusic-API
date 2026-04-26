@@ -7,14 +7,14 @@ const { AppError, parsePositiveInteger } = require('../middlewares/errorHandler'
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const getArtists = asyncHandler(async (req, res) => {
-  const page = parsePositiveInteger(req.query.page, 'Page', 1);
-  const limit = Math.min(parsePositiveInteger(req.query.limit, 'Limit', 10), 100);
+  const page = parsePositiveInteger(req.query.page, 'Página', 1);
+  const limit = Math.min(parsePositiveInteger(req.query.limit, 'Límite', 10), 100);
   const skip = (page - 1) * limit;
   const query = {};
 
   if (req.query.name) {
     const name = String(req.query.name).trim();
-    if (name.length > 200) throw new AppError('name filter is too long (max 200 characters).', 400);
+    if (name.length > 200) throw new AppError('El filtro de nombre es demasiado largo (máx. 200 caracteres).', 400);
     query.name = { $regex: escapeRegex(name), $options: 'i' };
   }
 
@@ -39,7 +39,7 @@ const getArtistById = asyncHandler(async (req, res) => {
   const artist = await Artist.findById(req.params.id).lean();
 
   if (!artist) {
-    throw new AppError('Artist not found.', 404);
+    throw new AppError('Artista no encontrado.', 404);
   }
 
   res.status(200).json({
@@ -74,7 +74,7 @@ const updateArtist = asyncHandler(async (req, res) => {
   ).lean();
 
   if (!artist) {
-    throw new AppError('Artist not found.', 404);
+    throw new AppError('Artista no encontrado.', 404);
   }
 
   res.status(200).json({
@@ -88,19 +88,19 @@ const deleteArtist = asyncHandler(async (req, res) => {
   const artist = await Artist.findById(req.params.id);
 
   if (!artist) {
-    throw new AppError('Artist not found.', 404);
+    throw new AppError('Artista no encontrado.', 404);
   }
 
   const hasSongs = await Song.exists({ artist: req.params.id });
 
   if (hasSongs) {
-    throw new AppError('Cannot delete artist because songs are associated with it.', 409);
+    throw new AppError('No se puede eliminar el artista porque tiene canciones asociadas.', 409);
   }
 
   const hasAlbums = await Album.exists({ artist: req.params.id });
 
   if (hasAlbums) {
-    throw new AppError('Cannot delete artist because albums are associated with it.', 409);
+    throw new AppError('No se puede eliminar el artista porque tiene álbumes asociados.', 409);
   }
 
   await artist.deleteOne();

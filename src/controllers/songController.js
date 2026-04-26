@@ -11,7 +11,7 @@ const MIN_YEAR = 1900;
 const validateYear = (value, label) => {
   const maxYear = new Date().getFullYear() + 1;
   if (value < MIN_YEAR || value > maxYear) {
-    throw new AppError(`${label} must be between ${MIN_YEAR} and ${maxYear}.`, 400);
+    throw new AppError(`${label} debe estar entre ${MIN_YEAR} y ${maxYear}.`, 400);
   }
 };
 
@@ -53,7 +53,7 @@ const buildSort = (sortValue) => {
     const field = rawField.replace(/^-/, '');
 
     if (!allowedSortFields.has(field)) {
-      throw new AppError(`Invalid sort field "${field}".`, 400);
+      throw new AppError(`Campo de ordenación no válido: "${field}".`, 400);
     }
 
     sort[field] = direction;
@@ -74,13 +74,13 @@ const ensureSongReferencesExist = async (artistId, albumId) => {
   const artist = await Artist.findById(artistId).select('_id');
 
   if (!artist) {
-    throw new AppError('Artist reference does not exist.', 400);
+    throw new AppError('El artista de referencia no existe.', 400);
   }
 
   const album = await Album.findById(albumId).select('_id');
 
   if (!album) {
-    throw new AppError('Album reference does not exist.', 400);
+    throw new AppError('El álbum de referencia no existe.', 400);
   }
 };
 
@@ -90,30 +90,30 @@ const fetchSongById = async (id) =>
     .lean();
 
 const getSongs = asyncHandler(async (req, res) => {
-  const page = parsePositiveInteger(req.query.page, 'Page', 1);
-  const limit = Math.min(parsePositiveInteger(req.query.limit, 'Limit', 10), 100);
+  const page = parsePositiveInteger(req.query.page, 'Página', 1);
+  const limit = Math.min(parsePositiveInteger(req.query.limit, 'Límite', 10), 100);
   const sort = buildSort(req.query.sort);
   const query = {};
 
   if (req.query.search) {
     const search = String(req.query.search).trim();
-    if (search.length > 200) throw new AppError('search is too long (max 200 characters).', 400);
+    if (search.length > 200) throw new AppError('La búsqueda es demasiado larga (máx. 200 caracteres).', 400);
     query.title = { $regex: escapeRegex(search), $options: 'i' };
   }
 
   if (req.query.releaseYear !== undefined) {
     const releaseYear = Number(req.query.releaseYear);
-    if (!Number.isInteger(releaseYear)) throw new AppError('releaseYear must be an integer.', 400);
-    validateYear(releaseYear, 'releaseYear');
+    if (!Number.isInteger(releaseYear)) throw new AppError('El año de lanzamiento debe ser un número entero.', 400);
+    validateYear(releaseYear, 'El año de lanzamiento');
     query.releaseYear = releaseYear;
   } else if (req.query.minReleaseYear !== undefined || req.query.maxReleaseYear !== undefined) {
     const min = req.query.minReleaseYear !== undefined ? Number(req.query.minReleaseYear) : undefined;
     const max = req.query.maxReleaseYear !== undefined ? Number(req.query.maxReleaseYear) : undefined;
-    if (min !== undefined && !Number.isInteger(min)) throw new AppError('minReleaseYear must be an integer.', 400);
-    if (max !== undefined && !Number.isInteger(max)) throw new AppError('maxReleaseYear must be an integer.', 400);
-    if (min !== undefined) validateYear(min, 'minReleaseYear');
-    if (max !== undefined) validateYear(max, 'maxReleaseYear');
-    if (min !== undefined && max !== undefined && min > max) throw new AppError('minReleaseYear cannot be greater than maxReleaseYear.', 400);
+    if (min !== undefined && !Number.isInteger(min)) throw new AppError('El año mínimo debe ser un número entero.', 400);
+    if (max !== undefined && !Number.isInteger(max)) throw new AppError('El año máximo debe ser un número entero.', 400);
+    if (min !== undefined) validateYear(min, 'El año mínimo');
+    if (max !== undefined) validateYear(max, 'El año máximo');
+    if (min !== undefined && max !== undefined && min > max) throw new AppError('El año mínimo no puede ser mayor que el año máximo.', 400);
     query.releaseYear = {};
     if (min !== undefined) query.releaseYear.$gte = min;
     if (max !== undefined) query.releaseYear.$lte = max;
@@ -122,21 +122,21 @@ const getSongs = asyncHandler(async (req, res) => {
   if (req.query.minDuration !== undefined || req.query.maxDuration !== undefined) {
     const min = req.query.minDuration !== undefined ? Number(req.query.minDuration) : undefined;
     const max = req.query.maxDuration !== undefined ? Number(req.query.maxDuration) : undefined;
-    if (min !== undefined && (!Number.isFinite(min) || min <= 0)) throw new AppError('minDuration must be a positive number.', 400);
-    if (max !== undefined && (!Number.isFinite(max) || max <= 0)) throw new AppError('maxDuration must be a positive number.', 400);
-    if (min !== undefined && max !== undefined && min > max) throw new AppError('minDuration cannot be greater than maxDuration.', 400);
+    if (min !== undefined && (!Number.isFinite(min) || min <= 0)) throw new AppError('La duración mínima debe ser un número positivo.', 400);
+    if (max !== undefined && (!Number.isFinite(max) || max <= 0)) throw new AppError('La duración máxima debe ser un número positivo.', 400);
+    if (min !== undefined && max !== undefined && min > max) throw new AppError('La duración mínima no puede ser mayor que la duración máxima.', 400);
     query.duration = {};
     if (min !== undefined) query.duration.$gte = min;
     if (max !== undefined) query.duration.$lte = max;
   }
 
   if (req.query.artist) {
-    if (!mongoose.isValidObjectId(req.query.artist)) throw new AppError('artist must be a valid ObjectId.', 400);
+    if (!mongoose.isValidObjectId(req.query.artist)) throw new AppError('El artista debe ser un ObjectId válido.', 400);
     query.artist = req.query.artist;
   }
 
   if (req.query.album) {
-    if (!mongoose.isValidObjectId(req.query.album)) throw new AppError('album must be a valid ObjectId.', 400);
+    if (!mongoose.isValidObjectId(req.query.album)) throw new AppError('El álbum debe ser un ObjectId válido.', 400);
     query.album = req.query.album;
   }
 
@@ -163,7 +163,7 @@ const getSongById = asyncHandler(async (req, res) => {
   const song = await fetchSongById(req.params.id);
 
   if (!song) {
-    throw new AppError('Song not found.', 404);
+    throw new AppError('Canción no encontrada.', 404);
   }
 
   res.status(200).json({
@@ -199,7 +199,7 @@ const updateSong = asyncHandler(async (req, res) => {
   });
 
   if (!song) {
-    throw new AppError('Song not found.', 404);
+    throw new AppError('Canción no encontrada.', 404);
   }
 
   const populatedSong = await fetchSongById(song._id);
@@ -215,7 +215,7 @@ const deleteSong = asyncHandler(async (req, res) => {
   const song = await Song.findById(req.params.id);
 
   if (!song) {
-    throw new AppError('Song not found.', 404);
+    throw new AppError('Canción no encontrada.', 404);
   }
 
   await song.deleteOne();
@@ -230,7 +230,7 @@ const getSongsByArtist = asyncHandler(async (req, res) => {
   const artist = await Artist.findById(req.params.id).select('_id');
 
   if (!artist) {
-    throw new AppError('Artist not found.', 404);
+    throw new AppError('Artista no encontrado.', 404);
   }
 
   const songs = await Song.find({ artist: req.params.id }).populate(songPopulate).sort({ title: 1 }).lean();
@@ -246,7 +246,7 @@ const getSongsByAlbum = asyncHandler(async (req, res) => {
   const album = await Album.findById(req.params.id).select('_id');
 
   if (!album) {
-    throw new AppError('Album not found.', 404);
+    throw new AppError('Álbum no encontrado.', 404);
   }
 
   const songs = await Song.find({ album: req.params.id }).populate(songPopulate).sort({ title: 1 }).lean();

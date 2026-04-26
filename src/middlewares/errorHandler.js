@@ -7,7 +7,7 @@ class AppError extends Error {
 }
 
 const notFoundHandler = (req, res, next) => {
-  next(new AppError(`Route ${req.originalUrl} not found.`, 404));
+  next(new AppError(`Ruta ${req.originalUrl} no encontrada.`, 404));
 };
 
 const errorHandler = (error, req, res, next) => {
@@ -16,11 +16,11 @@ const errorHandler = (error, req, res, next) => {
   }
 
   let statusCode = error.statusCode || 500;
-  let message = error.message || 'Internal server error.';
+  let message = error.message || 'Error interno del servidor.';
 
   if (error.name === 'CastError') {
     statusCode = 400;
-    message = 'Invalid ObjectId format.';
+    message = 'Formato de ObjectId inválido.';
   }
 
   if (error.name === 'ValidationError') {
@@ -31,9 +31,9 @@ const errorHandler = (error, req, res, next) => {
   }
 
   if (error.code === 11000) {
-    const duplicateField = Object.keys(error.keyValue || {})[0] || 'field';
+    const duplicateField = Object.keys(error.keyValue || {})[0] || 'campo';
     statusCode = 409;
-    message = `${duplicateField} must be unique.`;
+    message = `El campo '${duplicateField}' debe ser único.`;
   }
 
   res.status(statusCode).json({
@@ -51,7 +51,7 @@ const parsePositiveInteger = (value, fieldName, defaultValue) => {
   const parsedValue = Number(value);
 
   if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
-    throw new AppError(`${fieldName} must be a positive integer.`, 400);
+    throw new AppError(`${fieldName} debe ser un entero positivo.`, 400);
   }
 
   return parsedValue;

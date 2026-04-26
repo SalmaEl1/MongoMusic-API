@@ -16,25 +16,25 @@ const ensureArtistExists = async (artistId) => {
   const artist = await Artist.findById(artistId).select('_id');
 
   if (!artist) {
-    throw new AppError('Artist reference does not exist.', 400);
+    throw new AppError('El artista de referencia no existe.', 400);
   }
 };
 
 const getAlbums = asyncHandler(async (req, res) => {
-  const page = parsePositiveInteger(req.query.page, 'Page', 1);
-  const limit = Math.min(parsePositiveInteger(req.query.limit, 'Limit', 10), 100);
+  const page = parsePositiveInteger(req.query.page, 'Página', 1);
+  const limit = Math.min(parsePositiveInteger(req.query.limit, 'Límite', 10), 100);
   const skip = (page - 1) * limit;
   const query = {};
 
   if (req.query.title) {
     const title = String(req.query.title).trim();
-    if (title.length > 200) throw new AppError('title filter is too long (max 200 characters).', 400);
+    if (title.length > 200) throw new AppError('El filtro de título es demasiado largo (máx. 200 caracteres).', 400);
     query.title = { $regex: escapeRegex(title), $options: 'i' };
   }
 
   if (req.query.artist) {
     if (!mongoose.isValidObjectId(req.query.artist)) {
-      throw new AppError('artist must be a valid ObjectId.', 400);
+      throw new AppError('El artista debe ser un ObjectId válido.', 400);
     }
     query.artist = req.query.artist;
   }
@@ -42,9 +42,9 @@ const getAlbums = asyncHandler(async (req, res) => {
   if (req.query.releaseDateFrom || req.query.releaseDateTo) {
     const from = req.query.releaseDateFrom ? new Date(req.query.releaseDateFrom) : undefined;
     const to = req.query.releaseDateTo ? new Date(req.query.releaseDateTo) : undefined;
-    if (from && isNaN(from)) throw new AppError('releaseDateFrom must be a valid date.', 400);
-    if (to && isNaN(to)) throw new AppError('releaseDateTo must be a valid date.', 400);
-    if (from && to && from > to) throw new AppError('releaseDateFrom cannot be after releaseDateTo.', 400);
+    if (from && isNaN(from)) throw new AppError('La fecha de inicio (releaseDateFrom) debe ser una fecha válida.', 400);
+    if (to && isNaN(to)) throw new AppError('La fecha de fin (releaseDateTo) debe ser una fecha válida.', 400);
+    if (from && to && from > to) throw new AppError('La fecha de inicio no puede ser posterior a la fecha de fin.', 400);
     query.releaseDate = {};
     if (from) query.releaseDate.$gte = from;
     if (to) query.releaseDate.$lte = to;
@@ -71,7 +71,7 @@ const getAlbumById = asyncHandler(async (req, res) => {
   const album = await Album.findById(req.params.id).populate(albumPopulate).lean();
 
   if (!album) {
-    throw new AppError('Album not found.', 404);
+    throw new AppError('Álbum no encontrado.', 404);
   }
 
   res.status(200).json({
@@ -118,7 +118,7 @@ const updateAlbum = asyncHandler(async (req, res) => {
     .lean();
 
   if (!album) {
-    throw new AppError('Album not found.', 404);
+    throw new AppError('Álbum no encontrado.', 404);
   }
 
   res.status(200).json({
@@ -132,13 +132,13 @@ const deleteAlbum = asyncHandler(async (req, res) => {
   const album = await Album.findById(req.params.id);
 
   if (!album) {
-    throw new AppError('Album not found.', 404);
+    throw new AppError('Álbum no encontrado.', 404);
   }
 
   const hasSongs = await Song.exists({ album: req.params.id });
 
   if (hasSongs) {
-    throw new AppError('Cannot delete album because songs are associated with it.', 409);
+    throw new AppError('No se puede eliminar el álbum porque tiene canciones asociadas.', 409);
   }
 
   await album.deleteOne();
